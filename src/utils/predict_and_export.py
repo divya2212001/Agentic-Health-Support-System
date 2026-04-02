@@ -7,7 +7,7 @@ import joblib
 from pathlib import Path
 import datetime
 
-MODEL_PATH = Path("models/logistic_regression.pkl")
+MODEL_PATH = Path("models/random_forest.pkl")
 OUTPUT_DIR = Path("exports")
 
 def predict_and_export_pdf(patient_data, patient_name, file_name="report"):
