@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 import time
 import plotly.express as px
 from utils.agent import health_agent_response
+from utils.predict_and_export import predict_and_export_pdf
 
 st.set_page_config(
     page_title="MediRisk AI | Professional Dashboard",
@@ -316,8 +317,27 @@ if st.session_state.active_tab == "Risk Assessment":
                     data = [float(age_val), s_num, cp_num, float(bp_val), float(chol_val), fbs_num, ecg_num, float(hr_val), exang_num, oldpeak_val, slope_num, float(ca_val), float(thal_num)]
                     input_vec = pd.DataFrame([data], columns=['age', 'sex', 'cp', 'trestbps', 'chol', 'fbs', 'restecg', 'thalach', 'exang', 'oldpeak', 'slope', 'ca', 'thal'])
                     
-                    st.session_state.risk_prob = model.predict_proba(input_vec)[0][1]
+                    probability = model.predict_proba(input_vec)[0][1]
+                    st.session_state.risk_prob = probability
                     st.session_state.analysis_run = True
+
+                    st.session_state.patient_data = {
+                        'name': p_name,
+                        'age': age_val,
+                        'sex': s_num,
+                        'cp': cp_num,
+                        'trestbps': bp_val,
+                        'chol': chol_val,
+                        'fbs': fbs_num,
+                        'restecg': ecg_num,
+                        'thalach': hr_val,
+                        'exang': exang_num,
+                        'oldpeak': oldpeak_val,
+                        'slope': slope_num,
+                        'ca': ca_val,
+                        'thal': thal_num,
+                        'predicted_probability': round(probability, 4)
+                    }
 
                     p = st.session_state.risk_prob
                     lvl = "LOW" if p < 0.4 else "MODERATE" if p < 0.7 else "HIGH"
@@ -392,6 +412,27 @@ if st.session_state.active_tab == "Risk Assessment":
                     <div style="height:100%; width:{int(val*100)}%; background:var(--accent); border-radius:10px;"></div>
                 </div>
                 """, unsafe_allow_html=True)
+
+            if st.button("Export Report (PDF)"):
+                if 'patient_data' in st.session_state:
+                    core_data = {k: v for k, v in st.session_state.patient_data.items() if k in [
+                        'age','sex','cp','trestbps','chol','fbs','restecg',
+                        'thalach','exang','oldpeak','slope','ca','thal'
+                    ]}
+                    if len(core_data) == 13:
+                        pdf_path = predict_and_export_pdf(
+                            core_data,
+                            patient_name=st.session_state.patient_data.get("name", "Unknown"),
+                            file_name=f"report_{int(time.time())}"
+                        )
+                        with open(pdf_path, "rb") as f:
+                            pdf_bytes = f.read()
+                        st.success(f"Report generated: {pdf_path}")
+                        st.download_button("Download Report PDF", data=pdf_bytes, file_name=pdf_path.name, mime="application/pdf")
+                    else:
+                        st.error("Insufficient patient data fields for export. Please run assessment again.")
+                else:
+                    st.error("No patient data available to export. Run assessment first.")
 
 elif st.session_state.active_tab == "Health Agent":
     st.markdown('<p class="card-label">AI Health Consultation Agent</p>', unsafe_allow_html=True)

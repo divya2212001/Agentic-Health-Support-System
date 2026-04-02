@@ -6,12 +6,10 @@ def health_agent_response(query, patient_data, risk_prob):
     query = query.lower()
     response = ""
 
-
     bp = patient_data.get("bp", 120)
     chol = patient_data.get("chol", 180)
     glucose = patient_data.get("glucose", 100)
     age = patient_data.get("age", 30)
-
 
     if "risk" in query or "why" in query or "condition" in query:
         if risk_prob < 0.4:
@@ -69,7 +67,7 @@ To improve your heart health:
 
     if response == "":
         response = f"""
-Your current risk score is {round(risk_prob,2)}.
+Your current risk score is {round(risk_prob, 2)}.
 
 You can ask about:
 - Your risk level
@@ -78,8 +76,6 @@ You can ask about:
 - How to improve health
 """
 
-    response += "\n\n Tip: Stay active and maintain a healthy lifestyle."
-    # response += "\n\n This is not medical advice."
+    response += "\n\nTip: Stay active and maintain a healthy lifestyle."
 
     return response
-    
