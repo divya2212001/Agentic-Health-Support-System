@@ -6,6 +6,7 @@ import os
 import plotly.graph_objects as go
 import time
 import plotly.express as px
+from utils.agent import health_agent_response
 
 st.set_page_config(
     page_title="MediRisk AI | Professional Dashboard",
@@ -282,6 +283,20 @@ if st.session_state.active_tab == "Risk Assessment":
         # st.session_state.model_choice = model_name
         
         if st.button("RUN RISK ASSESSMENT", use_container_width=True):
+            if not p_name or p_name.strip() == "":
+                st.error("Patient Name is required")
+                st.stop()
+
+            if age_val is None:
+                st.error("Age is required")
+                st.stop()
+
+            if bmi_val is None:
+                st.error("BMI is required")
+                st.stop()
+
+            with st.spinner("Processing Clinical Tensors..."):
+                time.sleep(1.2)
             with st.spinner("Processing Clinical Tensors..."):
                 time.sleep(1.2)
                 model = all_models.get("Random Forest")
@@ -374,28 +389,57 @@ if st.session_state.active_tab == "Risk Assessment":
                     <span style="color:var(--accent); font-weight:600;">{int(val*100)}% Influence</span>
                 </div>
                 <div style="height:2px; background:#334155; border-radius:10px; margin-bottom:15px;">
-                    <div style="height:100%; width:{int(val*300)}%; background:var(--accent); border-radius:10px;"></div>
+                    <div style="height:100%; width:{int(val*100)}%; background:var(--accent); border-radius:10px;"></div>
                 </div>
                 """, unsafe_allow_html=True)
 
 elif st.session_state.active_tab == "Health Agent":
     st.markdown('<p class="card-label">AI Health Consultation Agent</p>', unsafe_allow_html=True)
-    
-    st.info("The Agentic Health Assistant is being synchronized with your clinical data. This will provide contextual lifestyle advice, medication reminders, and diagnostic explanations.")
-    
-    chat_col, data_col = st.columns([2, 1])
-    with chat_col:
-        st.markdown("""
-        <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; height: 350px; overflow-y: auto;">
-            <p style="color: var(--accent); font-weight: 600;">System Agent:</p>
-            <p style="color: var(--text-muted); font-size: 0.9rem;">Greetings. I am your MediRisk AI Assistant. Once the neural handshake is complete, I will be able to analyze your current risk score of <b>{:.2f}</b> and provide detailed clinical pathing.</p>
-        </div>
-        """.format(st.session_state.risk_prob), unsafe_allow_html=True)
-        st.text_input("Ask the Health Agent...", placeholder="e.g., Explain my fasting blood sugar results.")
-    
-    with data_col:
-        st.markdown('<p style="font-size: 0.8rem; color: var(--text-muted); text-align:center; margin-top:40px;">Neural Sync Progress</p>', unsafe_allow_html=True)
-        st.progress(0.15)
+
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+
+    if not st.session_state.analysis_run:
+        st.warning("Please run risk assessment first.")
+    else:
+        if len(st.session_state.chat_history) == 0:
+            st.info("Hi! Ask me about your health metrics or risk.")
+
+        for msg in st.session_state.chat_history:
+            if msg["role"] == "user":
+                st.chat_message("user").write(msg["content"])
+            else:
+                st.chat_message("assistant").write(msg["content"])
+
+        user_input = st.chat_input("Ask the Health Agent...")
+
+        if user_input:
+            st.session_state.chat_history.append({
+                "role": "user",
+                "content": user_input
+            })
+
+            patient_data = st.session_state.get("patient_data", {})
+
+            response = health_agent_response(
+                user_input,
+                patient_data,
+                st.session_state.risk_prob
+            )
+
+            # response += "\n\n This is not medical advice."
+
+            st.session_state.chat_history.append({
+                "role": "assistant",
+                "content": response
+            })
+
+            st.rerun()
+
+        st.markdown("### Suggested questions:")
+        st.markdown("- Why is my risk low?")
+        st.markdown("- Is my blood pressure normal?")
+        st.markdown("- How can I improve my health?")
 
 elif st.session_state.active_tab == "Patient History":
     st.markdown("# Patient History")

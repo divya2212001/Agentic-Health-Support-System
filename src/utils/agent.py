@@ -1,16 +1,19 @@
 def health_agent_response(query, patient_data, risk_prob):
     """
-    Basic rule-based agent (Agent v1)
+    Improved rule-based agent (Agent v2)
     """
 
     query = query.lower()
-    bp = patient_data.get("bp")
-    chol = patient_data.get("chol")
-    glucose = patient_data.get("glucose")
-    age = patient_data.get("age")
     response = ""
 
-    if "risk" in query:
+
+    bp = patient_data.get("bp", 120)
+    chol = patient_data.get("chol", 180)
+    glucose = patient_data.get("glucose", 100)
+    age = patient_data.get("age", 30)
+
+
+    if "risk" in query or "why" in query or "condition" in query:
         if risk_prob < 0.4:
             response += "Your predicted heart risk is LOW. "
         elif risk_prob < 0.7:
@@ -18,17 +21,32 @@ def health_agent_response(query, patient_data, risk_prob):
         else:
             response += "Your predicted heart risk is HIGH. "
 
+        if bp < 130:
+            response += "Your blood pressure is within a healthy range. "
+        else:
+            response += "Elevated blood pressure increases your risk. "
+
+        if chol < 200:
+            response += "Cholesterol levels are controlled. "
+        else:
+            response += "High cholesterol may lead to artery blockage. "
+
+        if glucose < 120:
+            response += "Blood sugar is normal. "
+        else:
+            response += "High glucose can increase cardiovascular risk. "
+
     if "blood pressure" in query or "bp" in query:
         if bp > 140:
-            response += "Your blood pressure is high, which increases cardiovascular strain. Consider reducing salt intake and stress. "
+            response += "Your blood pressure is high. Reduce salt intake and manage stress. "
         elif bp < 90:
-            response += "Your blood pressure is low. Monitor for dizziness or fatigue. "
+            response += "Your blood pressure is low. Monitor for dizziness. "
         else:
             response += "Your blood pressure is within a normal range. "
 
     if "cholesterol" in query:
         if chol > 240:
-            response += "High cholesterol detected. This may lead to artery blockage. Reduce saturated fats. "
+            response += "High cholesterol detected. Reduce saturated fats. "
         elif chol > 200:
             response += "Borderline cholesterol. Lifestyle improvements recommended. "
         else:
@@ -36,12 +54,32 @@ def health_agent_response(query, patient_data, risk_prob):
 
     if "sugar" in query or "glucose" in query:
         if glucose > 126:
-            response += "High blood sugar detected. Risk of diabetes. Consider medical consultation. "
+            response += "High blood sugar detected. Consider medical consultation. "
         else:
             response += "Blood sugar appears normal. "
 
+    if "improve" in query or "health" in query:
+        response += """
+To improve your heart health:
+- Exercise regularly (30 mins daily)
+- Maintain a balanced diet
+- Reduce salt and sugar intake
+- Monitor vitals regularly
+"""
+
     if response == "":
-        response = "I can help explain your health metrics, risk score, or suggest lifestyle improvements."
+        response = f"""
+Your current risk score is {round(risk_prob,2)}.
+
+You can ask about:
+- Your risk level
+- Blood pressure
+- Cholesterol
+- How to improve health
+"""
+
+    response += "\n\n Tip: Stay active and maintain a healthy lifestyle."
+    # response += "\n\n This is not medical advice."
 
     return response
     
