@@ -10,39 +10,60 @@ import datetime
 MODEL_PATH = Path("models/random_forest.pkl")
 OUTPUT_DIR = Path("exports")
 
+# ✅ Metadata function (for Chrome tab title)
+def add_metadata(canvas, doc, patient_name):
+    canvas.setTitle(f"Medical Report - {patient_name}")
+
 def predict_and_export_pdf(patient_data, patient_name, file_name="report"):
+    # Load model
     df = pd.DataFrame([patient_data])
-    model = joblib.load(MODEL_PATH) 
+    model = joblib.load(MODEL_PATH)
+
     pred = model.predict(df)[0]
     prob = model.predict_proba(df)[0][1]
     result = "Heart Disease Detected" if pred == 1 else "No Heart Disease"
+
+    # ✅ Sex formatting
     try:
         sex_value = int(float(patient_data.get("sex", 0)))
         sex_label = "Male" if sex_value == 1 else "Female"
     except:
         sex_label = "Unknown"
 
+    # ✅ Clean filename
+    clean_name = patient_name.replace(" ", "_")
     OUTPUT_DIR.mkdir(exist_ok=True)
-    pdf_path = OUTPUT_DIR / f"{file_name}.pdf"
+    pdf_path = OUTPUT_DIR / f"Medical_Report_{clean_name}.pdf"
+
+    # Create document
     doc = SimpleDocTemplate(str(pdf_path))
     styles = getSampleStyleSheet()
     elements = []
+
+    # Title
     elements.append(Paragraph("<b>MEDICAL REPORT</b>", styles["Title"]))
     elements.append(Spacer(1, 15))
+
+    # Patient Info
     info = [
         ["Patient Name", patient_name],
         ["Age", f"{patient_data['age']} years"],
         ["Sex", sex_label],
         ["Date", datetime.datetime.now().strftime("%Y-%m-%d")]
     ]
+
     info_table = Table(info, colWidths=[2.5*inch, 3.5*inch])
     info_table.setStyle(TableStyle([
         ("GRID", (0,0), (-1,-1), 0.5, colors.grey)
     ]))
+
     elements.append(info_table)
     elements.append(Spacer(1, 20))
-    elements.append(Paragraph("<b>Clinical Details</b>", styles["Heading2"]))
+
+    # Key Vitals
+    elements.append(Paragraph("<b>Key Vitals</b>", styles["Heading2"]))
     elements.append(Spacer(1, 10))
+
     vitals = [
         ["Parameter", "Value"],
         ["Blood Pressure", f"{patient_data['trestbps']} mmHg"],
@@ -59,9 +80,13 @@ def predict_and_export_pdf(patient_data, patient_name, file_name="report"):
 
     elements.append(vitals_table)
     elements.append(Spacer(1, 20))
+
+    # Diagnosis
     elements.append(Paragraph("<b>Diagnosis</b>", styles["Heading2"]))
     elements.append(Spacer(1, 10))
+
     color = "red" if pred == 1 else "green"
+
     elements.append(Paragraph(
         f"<b>Result:</b> <font color='{color}'>{result}</font>",
         styles["Normal"]
@@ -73,5 +98,8 @@ def predict_and_export_pdf(patient_data, patient_name, file_name="report"):
     elements.append(Spacer(1, 40))
     elements.append(Paragraph("_________________________", styles["Normal"]))
     elements.append(Paragraph("Authorized Medical System", styles["Normal"]))
-    doc.build(elements)
+    doc.build(
+        elements,
+        onFirstPage=lambda c, d: add_metadata(c, d, patient_name)
+    )
     return pdf_path
