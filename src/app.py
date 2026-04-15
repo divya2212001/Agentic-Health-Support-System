@@ -27,6 +27,8 @@ if 'is_processing' not in st.session_state:
     st.session_state.is_processing = False
 if 'active_tab' not in st.session_state:
     st.session_state.active_tab = "Risk Assessment"
+if 'assessment_done' not in st.session_state:
+    st.session_state.assessment_done = False
 
 @st.cache_resource
 def load_all_models():
@@ -238,7 +240,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
 
-
+# Risk Assessment Tab
 if st.session_state.active_tab == "Risk Assessment":
     l, r = st.columns([1.4, 1], gap="large")
 
@@ -248,7 +250,7 @@ if st.session_state.active_tab == "Risk Assessment":
         col1, col2 = st.columns(2)
         with col1:
             p_name = st.text_input("Patient Name", value="", placeholder="Enter patient name")
-            age_val = st.number_input("Age", 1, 100, 45)
+            age_val = st.number_input("Age", 1, 100, 1)
             sex_val = st.selectbox("Gender", ["Male", "Female"])
         with col2:
             bmi_val = st.number_input("BMI (kg/m²)", 10.0, 50.0, value=22.0, step=0.1, placeholder="Enter BMI")
@@ -308,22 +310,44 @@ if st.session_state.active_tab == "Risk Assessment":
             ca_val = st.slider("VALVES (CA)", 0, 4, 0)
             thal_val = st.selectbox("STRESS TEST", ["Normal", "Fixed Defect", "Reversable Defect"])
 
+    # right column - results and insights
     with r:
         st.markdown('<p class="card-label">System Control</p>', unsafe_allow_html=True)
         if st.button("RUN RISK ASSESSMENT", use_container_width=True):
-            st.session_state.is_processing = True
+            missing = []
+
+            if not p_name.strip():
+                missing.append("Patient Name")
+
+            if age_val <= 0:
+                missing.append("Age")
+
+            if bmi_val <= 0:
+                missing.append("BMI")
+
+            if missing:
+                st.error(
+                    "Please fill required fields: "
+                    + ", ".join(missing)
+                )
+                st.session_state.assessment_done = False
+
+            else:
+                st.session_state.is_processing = True
+                st.session_state.assessment_done = True
             
         st.divider()
         
         st.markdown('<p class="card-label">Assessment Insights</p>', unsafe_allow_html=True)
         
+        
         if st.session_state.is_processing:
             with st.spinner("Processing Clinical Tensors..."):
                 time.sleep(1.0)
-            st.session_state.is_processing = False
 
+        # RESULT BLOCK - only shows after assessment is run
         model = all_models.get("Random Forest")
-        if model:
+        if model and st.session_state.assessment_done:
             s_num = 1.0 if sex_val == "Male" else 0.0
             cp_map = {"Typical Angina": 1, "Atypical Angina": 2, "Non-anginal Pain": 3, "Asymptomatic": 4}
             cp_num = cp_map.get(cp_val, 4)
@@ -470,6 +494,9 @@ if st.session_state.active_tab == "Risk Assessment":
                             st.download_button("Download File", data=pdf_bytes, file_name=pdf_path.name, mime="application/pdf")
                         except Exception as e:
                             st.error(f"Error generating PDF: {e}")
+
+            # stop loading after rendering results
+            st.session_state.is_processing = False
 
 elif st.session_state.active_tab == "Patient History":
     st.markdown("## Patient History")
