@@ -8,7 +8,7 @@ import time
 import plotly.express as px
 from utils.agent import health_agent_response
 from utils.predict_and_export import predict_and_export_pdf
-
+from langchain.memory import ConversationBufferWindowMemory
 st.set_page_config(
     page_title="MediRisk AI | Professional Dashboard",
     layout="wide",
@@ -19,6 +19,8 @@ if 'history' not in st.session_state:
     st.session_state.history = []
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
+if 'agent_memory' not in st.session_state:
+    st.session_state.agent_memory = ConversationBufferWindowMemory(k=10, memory_key="chat_history", return_messages=True)
 if 'analysis_run' not in st.session_state:
     st.session_state.analysis_run = True  
 if 'risk_prob' not in st.session_state:
@@ -534,8 +536,13 @@ elif st.session_state.active_tab == "Analytics":
 
 elif st.session_state.active_tab == "Health Agent":
     st.markdown("## AI Health Consultation Agent")
-    st.markdown('<p style="color: var(--text-color); opacity: 0.7; font-size: 0.9rem;">Discuss your assessment directly with our intelligent assistant, now powered by <b>Agentic RAG</b> (Llama-3.1).</p>', unsafe_allow_html=True)
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown('<p style="color: var(--text-color); opacity: 0.7; font-size: 0.9rem;">AI Agent powered by LangChain ReAct + Llama 3.1 — equipped with clinical tools, document retrieval, and conversation memory.</p>', unsafe_allow_html=True)
+    st.markdown("""
+    <div style="display: flex; gap: 8px; margin-top: 5px; margin-bottom: 20px;">
+        <span style="background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: bold;">🧠 MEMORY ACTIVE</span>
+        <span style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: bold;">🔧 4 TOOLS LOADED</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     if not st.session_state.get('patient_data'):
         st.warning("Please configure your risk assessment first.")
@@ -562,7 +569,12 @@ elif st.session_state.active_tab == "Health Agent":
                         st.error(f"Error: {e}")
                         
             if st.session_state.vectorstore:
-                st.markdown('<div style="padding: 10px; border-radius: 8px; border: 1px solid #10b981; background: rgba(16, 185, 129, 0.1); color: #10b981; text-align: center; font-weight: bold; font-size: 0.85rem;">RAG MEMORY ACTIVE </div>', unsafe_allow_html=True)
+                st.markdown('<div style="padding: 10px; border-radius: 8px; border: 1px solid #10b981; background: rgba(16, 185, 129, 0.1); color: #10b981; text-align: center; font-weight: bold; font-size: 0.85rem; margin-bottom: 20px;">📄 RAG MEMORY ACTIVE </div>', unsafe_allow_html=True)
+
+            if st.button("🗑️ Clear Chat", use_container_width=True):
+                st.session_state.chat_history = []
+                st.session_state.agent_memory.clear()
+                st.rerun()
 
         with col_chat:
             if len(st.session_state.chat_history) == 0:
@@ -573,6 +585,9 @@ elif st.session_state.active_tab == "Health Agent":
                     st.chat_message("user").write(msg["content"])
                 else:
                     st.chat_message("assistant").write(msg["content"])
+                    if "tools_used" in msg and msg["tools_used"]:
+                        with st.expander("🔧 Tools Used"):
+                            st.write("\n".join(msg["tools_used"]))
 
             user_input = st.chat_input("Ask the Health Agent...")
 
@@ -581,23 +596,34 @@ elif st.session_state.active_tab == "Health Agent":
                 st.chat_message("user").write(user_input)
 
                 with st.chat_message("assistant"):
-                    with st.spinner("Thinking..."):
+                    with st.spinner("Agent is reasoning..."):
                         try:
-                            response = health_agent_response(
+                            answer, tools_used = health_agent_response(
                                 user_input,
                                 st.session_state.patient_data,
                                 st.session_state.risk_prob,
-                                st.session_state.vectorstore
+                                st.session_state.vectorstore,
+                                st.session_state.agent_memory
                             )
-                            st.write(response)
-                            st.session_state.chat_history.append({"role": "assistant", "content": response})
+                            st.write(answer)
+                            if tools_used:
+                                tools_display = ["• " + str(t) for t in tools_used]
+                                with st.expander("🔧 Tools Used"):
+                                    st.write("\n".join(tools_display))
+                                
+                            st.session_state.chat_history.append({
+                                "role": "assistant", 
+                                "content": answer,
+                                "tools_used": ["• " + str(t) for t in tools_used] if tools_used else None
+                            })
                         except Exception as e:
                             st.error(f"Agent error: {e}")
 
         st.markdown("---")
         st.markdown("**Suggested questions:**")
-        st.markdown("- *Why is my risk level what it is?*")
-        st.markdown("- *Are my cholesterol and blood pressure normal?*")
-        st.markdown("- *How can I improve my health?*")
+        st.markdown("- *Analyze my risk factors in detail*")
+        st.markdown("- *Are my vitals within normal range?*")
+        st.markdown("- *Give me personalized health recommendations*")
+        st.markdown("- *What does my uploaded document say about my condition?*")
 
 st.markdown('<div style="text-align: center; color: var(--text-color); opacity: 0.5; font-size: 0.7rem; margin-top: 40px; padding: 20px;">VERIFIED FOR CLINICAL EVALUATION • MEDIRISK PRO V2.5</div>', unsafe_allow_html=True)
