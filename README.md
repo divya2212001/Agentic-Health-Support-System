@@ -60,12 +60,13 @@ This project builds a structured ML-based risk prediction system and extends it 
 
 ## Milestone 2 – Agentic AI Extension
 
-- Uses predicted risk output
-- Generates structured health summary
-- Provides preventive recommendations
-- Suggests follow-up actions
-- Medical disclaimer inclusion
-- Optional Retrieval-Augmented Generation (RAG)
+- Uses predicted risk outputs to analyze uploaded health reports intelligently.
+- Generates a structured health summary based on report data and user queries.
+- Provides personalized preventive recommendations using LLM-powered insights.
+- Suggests appropriate follow-up actions for better health management.
+- Includes medical disclaimers for responsible AI-assisted guidance.
+- Implements Retrieval-Augmented Generation (RAG) to answer questions from uploaded health reports.
+- Integrates agentic AI workflows to process reports, retrieve relevant context, and generate accurate responses dynamically.
 
 ---
 
