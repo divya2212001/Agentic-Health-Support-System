@@ -186,20 +186,20 @@ def create_tools(patient_data, risk_prob, vectorstore=None):
         # Cholesterol recommendations
         if chol > 240:
             recs.append(
-                "🫀 CHOLESTEROL: High levels detected. Reduce saturated fats "
+                "CHOLESTEROL: High levels detected. Reduce saturated fats "
                 "(< 6% of daily calories). Add soluble fiber (oats, beans, lentils). "
                 "Discuss statin therapy with your doctor."
             )
         elif chol > 200:
             recs.append(
-                "🫀 CHOLESTEROL: Borderline high. Increase omega-3 intake "
+                "CHOLESTEROL: Borderline high. Increase omega-3 intake "
                 "(fish, walnuts, flaxseed). Exercise regularly. Avoid trans fats."
             )
 
         # Blood sugar recommendations
         if fbs == 1:
             recs.append(
-                "🍬 BLOOD SUGAR: Elevated fasting sugar detected. Monitor HbA1c levels. "
+                "BLOOD SUGAR: Elevated fasting sugar detected. Monitor HbA1c levels. "
                 "Reduce refined carbohydrates and sugary drinks. Consider consulting "
                 "an endocrinologist."
             )
@@ -207,31 +207,31 @@ def create_tools(patient_data, risk_prob, vectorstore=None):
         # BMI recommendations
         if bmi > 30:
             recs.append(
-                "⚖️ WEIGHT: BMI indicates obesity. Target gradual weight loss of "
+                "WEIGHT: BMI indicates obesity. Target gradual weight loss of "
                 "0.5-1 kg/week. Combine diet modification with regular exercise. "
                 "Consider consulting a nutritionist."
             )
         elif bmi > 25:
             recs.append(
-                "⚖️ WEIGHT: BMI indicates overweight. Maintain a caloric deficit "
+                "WEIGHT: BMI indicates overweight. Maintain a caloric deficit "
                 "through balanced meals and regular physical activity."
             )
 
         # Risk-level-specific advice
         if level == "HIGH":
             recs.append(
-                "🚨 HIGH RISK ADVISORY: Schedule an immediate cardiology consultation. "
+                "HIGH RISK ADVISORY: Schedule an immediate cardiology consultation. "
                 "Consider cardiac stress testing. Ensure medication compliance if prescribed. "
                 "Avoid strenuous physical activity until cleared by a doctor."
             )
         elif level == "MODERATE":
             recs.append(
-                "⚠️ MODERATE RISK ADVISORY: Schedule a check-up within 2 weeks. "
+                "MODERATE RISK ADVISORY: Schedule a check-up within 2 weeks. "
                 "Begin lifestyle modifications immediately. Track your vitals daily."
             )
         else:
             recs.append(
-                "✅ LOW RISK: Continue current healthy habits. Annual check-ups "
+                "LOW RISK: Continue current healthy habits. Annual check-ups "
                 "recommended. Stay active and maintain balanced nutrition."
             )
 
@@ -254,9 +254,7 @@ def create_tools(patient_data, risk_prob, vectorstore=None):
     return tools
 
 
-# ═══════════════════════════════════════════════════════════════
 # Metric Interpretation Helpers (used by interpret_metrics tool)
-# ═══════════════════════════════════════════════════════════════
 
 def _interpret_bp(data):
     bp = data.get('trestbps', 0)
@@ -348,9 +346,7 @@ def _interpret_age(data):
     return f"Age: {age} years\nInterpretation: {risk}"
 
 
-# ═══════════════════════════════════════════════════════════════
 # Part 2 — ReAct Agent + Memory Setup
-# ═══════════════════════════════════════════════════════════════
 
 def create_health_agent(patient_data, risk_prob, vectorstore, memory):
     """
@@ -441,10 +437,6 @@ New input: {input}
     
     return agent_executor
 
-
-# ═══════════════════════════════════════════════════════════════
-# Existing health_agent_response (kept working until Part 2 & 3)
-# ═══════════════════════════════════════════════════════════════
 
 def health_agent_response(query, patient_data, risk_prob, vectorstore, memory):
     """
